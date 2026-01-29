@@ -1,0 +1,336 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>The AI Agent Builder's Playbook</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            line-height: 1.6;
+            color: #1a1a1a;
+        }
+        h1 { color: #0066cc; border-bottom: 3px solid #0066cc; padding-bottom: 10px; }
+        h2 { color: #333; margin-top: 40px; }
+        h3 { color: #555; }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        pre {
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        pre code {
+            background: none;
+            padding: 0;
+            color: #eee;
+        }
+        blockquote {
+            border-left: 4px solid #0066cc;
+            padding-left: 20px;
+            color: #666;
+            font-style: italic;
+        }
+        hr {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 40px 0;
+        }
+    </style>
+</head>
+<body>
+<h1>The AI Agent Builder's Playbook</h1>
+<h2>From Zero to Production AI Agents</h2>
+<p><em>By someone who actually built them.</em></p>
+<hr />
+<h1>Introduction</h1>
+<p>You've seen the demos. AI agents booking flights, writing code, making phone calls. Most of what you've seen is vaporware. But real, working AI agents? They exist. I've built them.</p>
+<p>This guide is the distillation of building:
+- A voice AI that makes real phone calls and books meetings
+- A crypto trading bot running 24/7
+- Production LLM applications handling real users</p>
+<p>No theory. No hype. Just what works.</p>
+<hr />
+<h1>Chapter 1: What AI Agents Actually Are</h1>
+<h2>The Hype vs Reality</h2>
+<p><strong>The hype:</strong> Autonomous systems that think for themselves and complete complex tasks without human intervention.</p>
+<p><strong>The reality:</strong> Sophisticated loops that:
+1. Take input
+2. Decide what to do (using an LLM)
+3. Execute actions (using tools)
+4. Observe results
+5. Repeat until done</p>
+<p>That's it. The magic is in the implementation details.</p>
+<h2>The Core Loop</h2>
+<pre><code class="language-python">while not done:
+    # 1. Get current state
+    observation = get_state()
+
+    # 2. Ask LLM what to do
+    action = llm.decide(observation, tools, history)
+
+    # 3. Execute the action
+    result = execute(action)
+
+    # 4. Check if we're done
+    done = check_completion(result)
+</code></pre>
+<p>Every agent, from AutoGPT to Claude Computer Use, is a variation of this loop.</p>
+<h2>What Makes Agents Hard</h2>
+<ol>
+<li><strong>Reliability</strong> - LLMs hallucinate. Tools fail. Networks timeout.</li>
+<li><strong>State management</strong> - Keeping track of what happened across many steps.</li>
+<li><strong>Cost</strong> - Each LLM call costs money. Loops can get expensive.</li>
+<li><strong>Latency</strong> - Users don't want to wait 30 seconds for a response.</li>
+</ol>
+<p>This guide teaches you to handle all of these.</p>
+<hr />
+<h1>Chapter 2: The Modern Agent Stack</h1>
+<h2>The Tools That Matter</h2>
+<h3>LangGraph</h3>
+<p>The best framework for building agents in 2025-2026. Why:
+- Explicit state machines (you control the flow)
+- Built-in persistence (state survives restarts)
+- Human-in-the-loop patterns
+- Production-ready with LangGraph Platform</p>
+<pre><code class="language-python">from langgraph.graph import StateGraph
+
+# Define your agent as a graph
+graph = StateGraph(AgentState)
+graph.add_node(&quot;think&quot;, thinking_node)
+graph.add_node(&quot;act&quot;, action_node)
+graph.add_edge(&quot;think&quot;, &quot;act&quot;)
+graph.add_conditional_edges(&quot;act&quot;, should_continue)
+</code></pre>
+<h3>Claude (Anthropic)</h3>
+<p>Best for agents because:
+- Follows instructions precisely
+- Less likely to hallucinate tool calls
+- Understands complex multi-step tasks
+- Has built-in tool use</p>
+<h3>The Tool Pattern</h3>
+<pre><code class="language-python">tools = [
+    {
+        &quot;name&quot;: &quot;search_web&quot;,
+        &quot;description&quot;: &quot;Search the internet for current information&quot;,
+        &quot;parameters&quot;: {
+            &quot;query&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;description&quot;: &quot;Search query&quot;}
+        }
+    },
+    {
+        &quot;name&quot;: &quot;send_email&quot;, 
+        &quot;description&quot;: &quot;Send an email to someone&quot;,
+        &quot;parameters&quot;: {
+            &quot;to&quot;: {&quot;type&quot;: &quot;string&quot;},
+            &quot;subject&quot;: {&quot;type&quot;: &quot;string&quot;},
+            &quot;body&quot;: {&quot;type&quot;: &quot;string&quot;}
+        }
+    }
+]
+</code></pre>
+<p>The LLM sees these tool definitions and decides when to use them.</p>
+<hr />
+<h1>Chapter 3: Building a Voice Agent</h1>
+<p>This is a real system I built. It:
+- Makes outbound phone calls via Twilio
+- Has natural conversations using speech-to-text and text-to-speech
+- Books meetings on Google Calendar
+- Sends SMS confirmations</p>
+<h2>Architecture</h2>
+<pre><code>Phone Call → Twilio → WebSocket → Your Server
+                                      ↓
+                              Speech-to-Text (Whisper)
+                                      ↓
+                              LangGraph Agent (Claude)
+                                      ↓
+                              Text-to-Speech
+                                      ↓
+                              WebSocket → Twilio → Phone
+</code></pre>
+<h2>The Key Insight: Turn-Taking</h2>
+<p>Voice agents fail when they talk over people. The solution:</p>
+<ol>
+<li><strong>Silence detection</strong> - Know when the human stopped talking</li>
+<li><strong>Strict response rules</strong> - Ask ONE question, then STOP</li>
+<li><strong>Interruption handling</strong> - If they start talking, shut up immediately</li>
+</ol>
+<pre><code class="language-python"># In your agent prompt:
+&quot;&quot;&quot;
+CRITICAL RULES:
+1. Ask only ONE question per response
+2. STOP talking immediately after the question mark
+3. If user interrupts, stop generating and listen
+&quot;&quot;&quot;
+</code></pre>
+<h2>Real Code: The Audio Pipeline</h2>
+<pre><code class="language-python">async def handle_audio_stream(websocket):
+    audio_buffer = []
+
+    async for message in websocket:
+        # Accumulate audio chunks
+        audio_buffer.append(message)
+
+        # Detect silence (VAD)
+        if is_silence(message, threshold=0.5):
+            # User stopped talking - process
+            transcript = whisper.transcribe(audio_buffer)
+
+            # Get agent response
+            response = await agent.process(transcript)
+
+            # Convert to speech and send back
+            audio = tts.synthesize(response)
+            await websocket.send(audio)
+
+            audio_buffer = []
+</code></pre>
+<hr />
+<h1>Chapter 4: Building a Trading Bot</h1>
+<p>Trading bots are agents with financial stakes. Every mistake costs money.</p>
+<h2>The Strategy: EMA + PSAR</h2>
+<p>A profitable strategy I've run:
+- <strong>EMA crossover</strong> for trend direction
+- <strong>Parabolic SAR</strong> for entry/exit timing
+- <strong>ATR</strong> for position sizing</p>
+<pre><code class="language-python">def get_signal(df):
+    # Calculate indicators
+    df['ema_fast'] = ta.ema(df['close'], 5)
+    df['ema_slow'] = ta.ema(df['close'], 20)
+    df['psar'] = ta.psar(df['high'], df['low'], df['close'])
+
+    # Buy signal: fast EMA crosses above slow, PSAR below price
+    buy = (df['ema_fast'] &gt; df['ema_slow']) and (df['psar'] &lt; df['close'])
+
+    # Sell signal: opposite
+    sell = (df['ema_fast'] &lt; df['ema_slow']) and (df['psar'] &gt; df['close'])
+
+    return 'BUY' if buy else 'SELL' if sell else None
+</code></pre>
+<h2>Risk Management</h2>
+<p>The difference between profit and ruin:</p>
+<ol>
+<li><strong>Position sizing</strong> - Never risk more than 1-2% per trade</li>
+<li><strong>Stop losses</strong> - Always have an exit plan</li>
+<li><strong>Take profits</strong> - Scale out at multiple levels</li>
+</ol>
+<pre><code class="language-python">def calculate_position_size(account_balance, risk_percent, stop_loss_pips):
+    risk_amount = account_balance * (risk_percent / 100)
+    position_size = risk_amount / stop_loss_pips
+    return position_size
+</code></pre>
+<h2>The Execution Loop</h2>
+<pre><code class="language-python">while market_is_open:
+    # Get fresh data
+    df = fetch_candles(symbol, timeframe)
+
+    # Check for signals
+    signal = get_signal(df)
+
+    # Execute if we have a signal and no open position
+    if signal and not has_open_position():
+        if signal == 'BUY':
+            open_long(calculate_position_size())
+        else:
+            open_short(calculate_position_size())
+
+    # Manage existing positions
+    manage_trailing_stops()
+    check_take_profit_levels()
+
+    # Wait for next candle
+    sleep(timeframe_seconds)
+</code></pre>
+<hr />
+<h1>Chapter 5: Production Deployment</h1>
+<h2>Docker Everything</h2>
+<pre><code class="language-dockerfile">FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+CMD [&quot;python&quot;, &quot;-m&quot;, &quot;uvicorn&quot;, &quot;main:app&quot;, &quot;--host&quot;, &quot;0.0.0.0&quot;]
+</code></pre>
+<h2>Health Checks and Monitoring</h2>
+<pre><code class="language-python">@app.get(&quot;/health&quot;)
+async def health():
+    return {
+        &quot;status&quot;: &quot;healthy&quot;,
+        &quot;llm_connected&quot;: await check_llm(),
+        &quot;db_connected&quot;: await check_db(),
+        &quot;last_activity&quot;: get_last_activity_time()
+    }
+</code></pre>
+<h2>Handling Failures</h2>
+<pre><code class="language-python">from tenacity import retry, stop_after_attempt, wait_exponential
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=4, max=10)
+)
+async def call_llm(prompt):
+    return await llm.complete(prompt)
+</code></pre>
+<hr />
+<h1>Chapter 6: Common Mistakes</h1>
+<h2>1. No State Persistence</h2>
+<p>Your agent crashes. All context is lost. User has to start over.</p>
+<p><strong>Fix:</strong> Use LangGraph with PostgreSQL backend.</p>
+<h2>2. Infinite Loops</h2>
+<p>Agent gets stuck calling the same tool repeatedly.</p>
+<p><strong>Fix:</strong> Add a step counter and max iterations.</p>
+<pre><code class="language-python">if state.steps &gt; MAX_STEPS:
+    return &quot;I've been trying for a while. Let me summarize what I found...&quot;
+</code></pre>
+<h2>3. Exposing API Keys</h2>
+<p>Hardcoding keys in code that gets committed.</p>
+<p><strong>Fix:</strong> Environment variables, always.</p>
+<pre><code class="language-python">import os
+api_key = os.environ['OPENAI_API_KEY']  # Never hardcode
+</code></pre>
+<h2>4. Not Handling Rate Limits</h2>
+<p><strong>Fix:</strong> Exponential backoff + request queuing.</p>
+<h2>5. Trusting LLM Output</h2>
+<p>LLMs lie. They confidently make up tool parameters.</p>
+<p><strong>Fix:</strong> Validate everything.</p>
+<pre><code class="language-python">def execute_tool(tool_call):
+    # Validate parameters before execution
+    if tool_call.name == &quot;send_email&quot;:
+        if not is_valid_email(tool_call.params['to']):
+            return &quot;Invalid email address&quot;
+
+    # Now execute
+    return tools[tool_call.name](**tool_call.params)
+</code></pre>
+<hr />
+<h1>Conclusion</h1>
+<p>AI agents are not magic. They're engineering.</p>
+<p>The companies winning with AI agents aren't using secret techniques. They're:
+1. Building robust loops
+2. Managing state properly
+3. Handling failures gracefully
+4. Iterating based on real usage</p>
+<p>Now you have the playbook. Build something.</p>
+<hr />
+<h1>Appendix: Resources</h1>
+<ul>
+<li>LangGraph docs: https://langchain-ai.github.io/langgraph/</li>
+<li>Anthropic Claude docs: https://docs.anthropic.com/</li>
+<li>Twilio Voice: https://www.twilio.com/docs/voice</li>
+<li>MetaTrader5 Python: https://www.mql5.com/en/docs/python_metatrader5</li>
+</ul>
+<hr />
+<p><em>This guide was written by an AI engineer who ships production agents.</em></p>
+</body>
+</html>
